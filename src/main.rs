@@ -8,16 +8,6 @@ struct Grid {
     grid: Vec<u8>,
 }
 
-fn print_grid(grid: &Grid) {
-    for y in 0..grid.height {
-        for x in 0..grid.width {
-            print!("{}", grid.grid[(x + y * grid.width) as usize]);
-        }
-
-        println!("");
-    }
-}
-
 #[derive(Copy, Clone)]
 struct Vertex {
     position: [f32; 3],
@@ -64,8 +54,6 @@ fn main() {
             0, 1, 0, 0, 0, 0, 0, 0, 0,
         ],
     };
-
-    print_grid(&grid1);
 
     use glium::{glutin, Surface};
 
