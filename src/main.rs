@@ -52,14 +52,16 @@ fn shape_from_grid(grid: &Grid, type_filter: u8) -> Vec<Vertex> {
 
 fn main() {
     let grid1 = Grid {
-        width: 7,
-        height: 5,
+        width: 9,
+        height: 7,
         grid: vec![
-            0, 1, 0, 0, 0, 0, 1,
-            0, 0, 1, 0, 0, 1, 0,
-            0, 0, 1, 0, 0, 1, 0,
-            0, 0, 0, 1, 0, 1, 0,
-            0, 1, 0, 0, 0, 0, 0,
+            0, 1, 0, 0, 0, 0, 1, 0, 0,
+            0, 1, 0, 0, 1, 1, 0, 0, 0,
+            0, 0, 1, 0, 0, 1, 0, 1, 0,
+            0, 0, 0, 1, 0, 1, 1, 1, 0,
+            0, 0, 0, 0, 0, 0, 1, 0, 0,
+            0, 0, 1, 1, 1, 0, 1, 0, 1,
+            0, 1, 0, 0, 0, 0, 0, 0, 0,
         ],
     };
 
@@ -73,10 +75,6 @@ fn main() {
     let display = glium::Display::new(window, context, &events_loop).unwrap();
 
     implement_vertex!(Vertex, position);
-
-    let shape = shape_from_grid(&grid1, 0);
-    let vertex_buffer = glium::VertexBuffer::new(&display, &shape).unwrap();
-    let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip);
 
     let vertex_shader_src = r#"
         #version 140
@@ -94,15 +92,44 @@ fn main() {
         }
     "#;
 
-    let program = glium::Program::from_source(&display, vertex_shader_src, fragment_shader_src, None).unwrap();
+    let wall_fragment_shader_src = r#"
+        #version 140
+        out vec4 color;
+        void main() {
+            color = vec4(0.7, 0.7, 0.7, 1.0);
+        }
+    "#;
+
+    let walkable_obj_shape = shape_from_grid(&grid1, 0);
+    let walkable_obj_vertex_buffer = glium::VertexBuffer::new(&display, &walkable_obj_shape).unwrap();
+    let walkable_obj_indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip);
+    let walkable_obj_program = glium::Program::from_source(&display, vertex_shader_src, fragment_shader_src, None).unwrap();
+
+    let wall_obj_shape = shape_from_grid(&grid1, 1);
+    let wall_obj_vertex_buffer = glium::VertexBuffer::new(&display, &wall_obj_shape).unwrap();
+    let wall_obj_indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip);
+    let wall_obj_program = glium::Program::from_source(&display, vertex_shader_src, wall_fragment_shader_src, None).unwrap();
 
     let mut closed = false;
     while !closed {
         let mut target = display.draw();
         target.clear_color(1.0, 1.0, 1.0, 1.0);
 
-        target.draw(&vertex_buffer, &indices, &program, &glium::uniforms::EmptyUniforms,
-                    &Default::default()).unwrap();
+        target.draw(
+            &walkable_obj_vertex_buffer,
+            &walkable_obj_indices,
+            &walkable_obj_program,
+            &glium::uniforms::EmptyUniforms,
+            &Default::default()
+        ).unwrap();
+
+        target.draw(
+            &wall_obj_vertex_buffer,
+            &wall_obj_indices,
+            &wall_obj_program,
+            &glium::uniforms::EmptyUniforms,
+            &Default::default()
+        ).unwrap();
 
         target.finish().unwrap();
 
