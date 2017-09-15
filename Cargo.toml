@@ -1,0 +1,7 @@
+[package]
+name = "grid_2d_pathfinding"
+version = "0.1.0"
+authors = ["doup <asier@illarra.com>"]
+
+[dependencies]
+glium = "*"
