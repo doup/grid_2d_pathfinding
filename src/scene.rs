@@ -1,4 +1,6 @@
-#[derive(Debug, PartialEq, Eq, Hash)]
+use std::collections::HashMap;
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Point {
     position: [i8; 2],
 }
@@ -63,43 +65,82 @@ impl Map {
 
 #[derive(Debug)]
 pub struct Scene {
-    origin: Point,
-    target: Point,
+    pub origin: Point,
+    pub target: Point,
     maps: Vec<Map>,
     map: usize,
+    came_from: HashMap<Point, Point>,
 }
 
 impl Scene {
     pub fn new() -> Scene {
         Scene {
-            origin: Point { position: [0, 0] },
-            target: Point { position: [0, 0] },
-            maps:   vec![],
-            map:    0,
+            origin:    Point { position: [0, 0] },
+            target:    Point { position: [0, 0] },
+            maps:      vec![],
+            map:       0,
+            came_from: HashMap::new(),
         }
-    }
-
-    pub fn set_origin(&mut self, origin: Point) {
-        self.origin = origin;
-    }
-
-    pub fn set_target(&mut self, target: Point) {
-        self.target = target;
     }
 
     pub fn add_map(&mut self, map: Map) {
         self.maps.push(map);
     }
 
-    pub fn show_map(&mut self, id: usize) {
-        self.map = id;
+    // Breadth first search
+    fn calc_came_from(&mut self) {
+        let mut frontier = vec![];
+
+        // TODO: Se pueden quitar estos `clones()`? Esta bien? O es sintoma de algo… :-/
+        frontier.push(self.origin.clone());
+        self.came_from.clear();
+        self.came_from.insert(self.origin.clone(), self.origin.clone());
+
+        while frontier.len() > 0 {
+            let current = frontier.remove(0);
+            for next in self.map().get_neighbors(&current) {
+                if !self.came_from.contains_key(&next) {
+                    frontier.push(next.clone());
+                    self.came_from.insert(next, current.clone());
+                }
+            }
+        }
+    } 
+
+    pub fn get_path(&self) -> Vec<Point> {
+        let mut path = vec![];
+        let mut target = self.target.clone();
+
+        path.push(target.clone());
+
+        loop {
+            let from = self.came_from.get(&target).unwrap().clone();
+            path.push(from.clone());
+            target = from;
+
+            if target == self.origin {
+                break
+            }
+        }
+
+        path
     }
 
     pub fn map(&self) -> &Map {
         &self.maps[self.map]
     }
 
-    pub fn get_path(&self) -> Vec<Point> {
-        vec![]
+    pub fn set_origin(&mut self, origin: Point) {
+        self.origin = origin;
+        self.calc_came_from();
+    }
+
+    pub fn set_target(&mut self, target: Point) {
+        self.target = target;
+    }
+
+    pub fn show_map(&mut self, id: usize) {
+        self.map = id;
+        self.calc_came_from();
     }
 }

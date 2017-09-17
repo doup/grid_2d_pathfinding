@@ -1,9 +1,7 @@
-mod scene;
-
-use std::collections::HashMap;
-
 #[macro_use]
 extern crate glium;
+
+mod scene;
 
 #[derive(Copy, Clone)]
 struct Vertex {
@@ -36,7 +34,7 @@ fn shape_from_map(map: &scene::Map, padding: f32, type_filter: u8) -> Vec<Vertex
     shape
 }
 
-fn shape_from_gridpoint(map: &scene::Map, point: &scene::Point, width: f32, z: f32) -> Vec<Vertex> {
+fn shape_from_point(map: &scene::Map, point: &scene::Point, width: f32, z: f32) -> Vec<Vertex> {
     let cell_height = 2.0 / map.height as f32;
     let cell_width = 2.0 / map.width as f32;
     let x = -1.0 + (point.get_x() as f32 * cell_width) + cell_width / 2.0;
@@ -51,35 +49,15 @@ fn shape_from_gridpoint(map: &scene::Map, point: &scene::Point, width: f32, z: f
 
     shape
 }
-/*
-fn get_path(path_origin: &scene::Point, path_target: &scene::Point, came_from: &HashMap<(u8, u8), (u8, u8)>) -> Vec<(u8, u8)> {
-    let mut path = vec![];
-    let origin = (path_origin.get_x(), path_origin.get_y());
-    let mut target = (path_target.get_x(), path_target.get_y());
 
-    path.push(target);
-
-    loop {
-        let from = came_from.get(&target).unwrap().clone();
-        path.push(from);
-        target = from;
-
-        if from == origin {
-            break
-        }
-    }
-
-    path
-}*/
-
-fn shape_from_path(map: &scene::Map, path: Vec<(u8, u8)>, width: f32, z: f32) -> Vec<Vertex> {
+fn shape_from_path(map: &scene::Map, path: Vec<scene::Point>, width: f32, z: f32) -> Vec<Vertex> {
     let mut shape   = vec![];
     let cell_width  = 2.0 / map.width as f32;
     let cell_height = 2.0 / map.height as f32;
 
     for point in path {
-        let x = -1.0 + point.0 as f32 * cell_width + cell_width / 2.0; 
-        let y =  1.0 - point.1 as f32 * cell_height - cell_height / 2.0;
+        let x = -1.0 + point.get_x() as f32 * cell_width + cell_width / 2.0; 
+        let y =  1.0 - point.get_y() as f32 * cell_height - cell_height / 2.0;
         
         let left   = x - width;
         let top    = y + width;
@@ -96,27 +74,6 @@ fn shape_from_path(map: &scene::Map, path: Vec<(u8, u8)>, width: f32, z: f32) ->
 
     shape
 }
-/*
-// Breadth first search
-fn generate_came_from(map: &scene::Map, position: (i16, i16)) -> HashMap<(i16, i16), (i16, i16)> {
-    let mut frontier = vec![];
-    let mut came_from = HashMap::new();
-
-    frontier.push(position);
-    came_from.insert(position, position);
-
-    while frontier.len() > 0 {
-        let current = frontier.remove(0);
-        for next in get_neighbors(&map, current) {
-            if !came_from.contains_key(&next) {
-                frontier.push(next);
-                came_from.insert(next, current);
-            }
-        }
-    }
-
-    came_from
-}*/
 
 fn main() {
     let mut mouse_position: (f64, f64) = (0.0, 0.0);
@@ -145,25 +102,6 @@ fn main() {
     scene.set_origin(scene::Point::new(0, 0));
     scene.set_target(scene::Point::new(0, 0));
     scene.show_map(0);
-
-/*
-    let mut path_origin = GridPoint { x: 0, y: 0 };
-    let mut path_target = GridPoint { x: 0, y: 0 };
-    let grid1 = Grid {
-        width: 9,
-        height: 7,
-        grid: vec![
-            0, 1, 0, 0, 0, 0, 1, 0, 0,
-            0, 1, 0, 0, 1, 1, 0, 0, 0,
-            0, 0, 1, 0, 0, 1, 0, 1, 0,
-            0, 0, 0, 1, 0, 1, 1, 1, 0,
-            0, 0, 0, 0, 0, 0, 1, 0, 0,
-            0, 0, 1, 1, 1, 0, 1, 0, 1,
-            0, 1, 0, 0, 0, 0, 0, 0, 0,
-        ],
-    };
-*/
-    //let mut came_from = generate_came_from(&grid1, (path_origin.x, path_origin.y));
 
     use glium::{glutin, Surface};
 
@@ -231,22 +169,22 @@ fn main() {
     let wall_obj_vertex_buffer = glium::VertexBuffer::new(&display, &wall_obj_shape).unwrap();
     let wall_obj_indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip);
     let wall_obj_program = glium::Program::from_source(&display, vertex_shader_src, wall_fragment_shader_src, None).unwrap();
-/*
-    let mut path_obj_shape = shape_from_path(&grid1, get_path(&path_origin, &path_target, &came_from), 0.015, 0.1);
+
+    let mut path_obj_shape = shape_from_path(&scene.map(), scene.get_path(), 0.015, 0.1);
     let mut path_obj_vertex_buffer = glium::VertexBuffer::new(&display, &path_obj_shape).unwrap();
     let mut path_obj_indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip);
     let mut path_obj_program = glium::Program::from_source(&display, vertex_shader_src, path_fragment_shader_src, None).unwrap();
 
-    let mut path_origin_obj_shape = shape_from_gridpoint(&grid1, &path_origin, 0.05, 0.2);
+    let mut path_origin_obj_shape = shape_from_point(&scene.map(), &scene.origin, 0.05, 0.2);
     let mut path_origin_obj_vertex_buffer = glium::VertexBuffer::new(&display, &path_origin_obj_shape).unwrap();
     let mut path_origin_obj_indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip);
     let mut path_origin_obj_program = glium::Program::from_source(&display, vertex_shader_src, path_origin_fragment_shader_src, None).unwrap();
 
-    let mut path_target_obj_shape = shape_from_gridpoint(&grid1, &path_target, 0.03, 0.3);
+    let mut path_target_obj_shape = shape_from_point(&scene.map(), &scene.origin, 0.03, 0.3);
     let mut path_target_obj_vertex_buffer = glium::VertexBuffer::new(&display, &path_target_obj_shape).unwrap();
     let mut path_target_obj_indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip);
     let mut path_target_obj_program = glium::Program::from_source(&display, vertex_shader_src, path_target_fragment_shader_src, None).unwrap();
-*/
+
     let mut closed = false;
     while !closed {
         let mut target = display.draw();
@@ -267,7 +205,7 @@ fn main() {
             &glium::uniforms::EmptyUniforms,
             &Default::default()
         ).unwrap();
-/*
+
         target.draw(
             &path_obj_vertex_buffer,
             &path_obj_indices,
@@ -291,7 +229,7 @@ fn main() {
             &glium::uniforms::EmptyUniforms,
             &Default::default()
         ).unwrap();
-*/
+
         target.finish().unwrap();
 
         events_loop.poll_events(|event| {
@@ -310,33 +248,29 @@ fn main() {
                                 match button {
                                     glutin::MouseButton::Left => {
                                         scene.set_origin(scene::Point::new(map_x, map_y));
-                                        /*
-                                        path_origin_obj_shape = shape_from_gridpoint(&grid1, &path_origin, 0.05, 0.1);
+
+                                        path_origin_obj_shape = shape_from_point(&scene.map(), &scene.origin, 0.05, 0.1);
                                         path_origin_obj_vertex_buffer = glium::VertexBuffer::new(&display, &path_origin_obj_shape).unwrap();
                                         path_origin_obj_indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip);
                                         path_origin_obj_program = glium::Program::from_source(&display, vertex_shader_src, path_origin_fragment_shader_src, None).unwrap();
 
-                                        came_from = generate_came_from(&grid1, (path_origin.x, path_origin.y));
-
-                                        path_obj_shape = shape_from_path(&grid1, get_path(&path_origin, &path_target, &came_from), 0.015, 0.1);
+                                        path_obj_shape = shape_from_path(&scene.map(), scene.get_path(), 0.015, 0.1);
                                         path_obj_vertex_buffer = glium::VertexBuffer::new(&display, &path_obj_shape).unwrap();
                                         path_obj_indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip);
                                         path_obj_program = glium::Program::from_source(&display, vertex_shader_src, path_fragment_shader_src, None).unwrap();
-                                        */
                                     },
                                     glutin::MouseButton::Right => {
                                         scene.set_target(scene::Point::new(map_x, map_y));
-                                        /*
-                                        path_target_obj_shape = shape_from_gridpoint(&grid1, &path_target, 0.03, 0.2);
+
+                                        path_target_obj_shape = shape_from_point(&scene.map(), &scene.target, 0.03, 0.2);
                                         path_target_obj_vertex_buffer = glium::VertexBuffer::new(&display, &path_target_obj_shape).unwrap();
                                         path_target_obj_indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip);
                                         path_target_obj_program = glium::Program::from_source(&display, vertex_shader_src, path_target_fragment_shader_src, None).unwrap();
 
-                                        path_obj_shape = shape_from_path(&grid1, get_path(&path_origin, &path_target, &came_from), 0.015, 0.1);
+                                        path_obj_shape = shape_from_path(&scene.map(), scene.get_path(), 0.015, 0.1);
                                         path_obj_vertex_buffer = glium::VertexBuffer::new(&display, &path_obj_shape).unwrap();
                                         path_obj_indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip);
                                         path_obj_program = glium::Program::from_source(&display, vertex_shader_src, path_fragment_shader_src, None).unwrap();
-                                        */
                                     },
                                     _ => (),
                                 }
