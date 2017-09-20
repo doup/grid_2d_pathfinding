@@ -36,8 +36,6 @@ fn main() {
         0, 0, 0, 0, 0, 0,
     ]));
 
-    scene.set_origin(scene::Point::new(0, 0));
-    scene.set_target(scene::Point::new(0, 0));
     scene.show_map(0);
 
     renderer.update_all(&display, &scene);
@@ -50,6 +48,18 @@ fn main() {
             match event {
                 glutin::Event::WindowEvent { event, .. } => match event {
                     glutin::WindowEvent::Closed => closed = true,
+                    glutin::WindowEvent::KeyboardInput { input, .. } => {
+                        if input.state == glutin::ElementState::Pressed {
+                            match input.virtual_keycode.unwrap() {
+                                glutin::VirtualKeyCode::Escape => closed = true,
+                                glutin::VirtualKeyCode::Key1 => scene.show_map(0),
+                                glutin::VirtualKeyCode::Key2 => scene.show_map(1),
+                                _ => (),
+                            }
+
+                            renderer.update_all(&display, &scene);
+                        }
+                    },
                     glutin::WindowEvent::MouseMoved { position, .. } => mouse_position = position,
                     glutin::WindowEvent::MouseInput { state, button, .. } => match state {
                         glutin::ElementState::Pressed => {
@@ -61,12 +71,12 @@ fn main() {
                             if is_walkable {
                                 match button {
                                     glutin::MouseButton::Right => {
-                                        scene.set_origin(scene::Point::new(map_x, map_y));
+                                        scene.set_origin(map_x, map_y);
                                         renderer.update_origin(&display, &scene);
                                         renderer.update_path(&display, &scene);
                                     },
                                     glutin::MouseButton::Left => {
-                                        scene.set_target(scene::Point::new(map_x, map_y));
+                                        scene.set_target(map_x, map_y);
                                         renderer.update_target(&display, &scene);
                                         renderer.update_path(&display, &scene);
                                     },

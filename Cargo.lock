@@ -1,6 +1,6 @@
 [root]
 name = "grid_2d_pathfinding"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "glium 0.17.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

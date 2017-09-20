@@ -130,17 +130,19 @@ impl Scene {
         &self.maps[self.map]
     }
 
-    pub fn set_origin(&mut self, origin: Point) {
-        self.origin = origin;
+    pub fn set_origin(&mut self, x: i8, y: i8) {
+        self.origin = Point::new(x, y);
         self.calc_came_from();
     }
 
-    pub fn set_target(&mut self, target: Point) {
-        self.target = target;
+    pub fn set_target(&mut self, x: i8, y: i8) {
+        self.target = Point::new(x, y);
     }
 
     pub fn show_map(&mut self, id: usize) {
         self.map = id;
-        self.calc_came_from();
+
+        self.set_origin(0, 0);
+        self.set_target(0, 0);
     }
 }
