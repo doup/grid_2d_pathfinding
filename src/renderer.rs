@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use glium;
-use glium::{glutin, Surface};
+use glium::{Surface};
 use scene;
 
 #[derive(Copy, Clone)]
@@ -15,8 +15,6 @@ struct Object {
 }
 
 pub struct Renderer {
-    pub events_loop: glium::glutin::EventsLoop,
-    pub display:     glium::Display,
     walkable_obj:    Option<Object>,
     walls_obj:       Option<Object>,
     path_obj:        Option<Object>,
@@ -27,10 +25,6 @@ pub struct Renderer {
 
 impl Renderer {
     pub fn new() -> Renderer {
-        let events_loop = glutin::EventsLoop::new();
-        let window = glutin::WindowBuilder::new().with_title("Grid 2D Pathfinding").with_dimensions(800, 500);
-        let context = glutin::ContextBuilder::new();
-        let display = glium::Display::new(window, context, &events_loop).unwrap();
         let mut shaders: HashMap<String, String> = HashMap::new();
         
         shaders.insert(String::from("vertex.vert"), String::from(include_str!("shaders/vertex.vert")));
@@ -43,8 +37,6 @@ impl Renderer {
         implement_vertex!(Vertex, position);
 
         Renderer {
-            events_loop:     events_loop,
-            display:         display,
             walkable_obj:    None,
             walls_obj:       None,
             path_obj:        None,
@@ -54,8 +46,8 @@ impl Renderer {
         }
     }
 
-    pub fn draw(&self) {
-        let mut target = self.display.draw();
+    pub fn draw(&self, display: &glium::Display) {
+        let mut target = display.draw();
 
         target.clear_color(1.0, 1.0, 1.0, 1.0);
 
@@ -83,66 +75,66 @@ impl Renderer {
         }
     }
 
-    pub fn update_all(&mut self, scene: &scene::Scene) {
-        self.update_walkable(scene);
-        self.update_walls(scene);
-        self.update_path(scene);
-        self.update_origin(scene);
-        self.update_target(scene);
+    pub fn update_all(&mut self, display: &glium::Display, scene: &scene::Scene) {
+        self.update_walkable(display, scene);
+        self.update_walls(display, scene);
+        self.update_path(display, scene);
+        self.update_origin(display, scene);
+        self.update_target(display, scene);
     }
 
-    pub fn update_walkable(&mut self, scene: &scene::Scene) {
+    pub fn update_walkable(&mut self, display: &glium::Display, scene: &scene::Scene) {
         let vertex_shader = self.shaders.get(&String::from("vertex.vert")).unwrap();
         let fragment_shader = self.shaders.get(&String::from("walkable.frag")).unwrap();
 
         self.walkable_obj = Some(Object {
-            vertex_buffer: glium::VertexBuffer::new(&self.display, &self.shape_from_map(&scene.map(), 0.01, 0)).unwrap(),
+            vertex_buffer: glium::VertexBuffer::new(display, &self.shape_from_map(&scene.map(), 0.01, 0)).unwrap(),
             indices: glium::index::PrimitiveType::TriangleStrip,
-            program: glium::Program::from_source(&self.display, vertex_shader, fragment_shader, None).unwrap(),
+            program: glium::Program::from_source(display, vertex_shader, fragment_shader, None).unwrap(),
         });
     }
 
-    pub fn update_walls(&mut self, scene: &scene::Scene) {
+    pub fn update_walls(&mut self, display: &glium::Display, scene: &scene::Scene) {
         let vertex_shader = self.shaders.get(&String::from("vertex.vert")).unwrap();
         let fragment_shader = self.shaders.get(&String::from("walls.frag")).unwrap();
 
         self.walls_obj = Some(Object {
-            vertex_buffer: glium::VertexBuffer::new(&self.display, &self.shape_from_map(&scene.map(), 0.0, 1)).unwrap(),
+            vertex_buffer: glium::VertexBuffer::new(display, &self.shape_from_map(&scene.map(), 0.0, 1)).unwrap(),
             indices: glium::index::PrimitiveType::TriangleStrip,
-            program: glium::Program::from_source(&self.display, vertex_shader, fragment_shader, None).unwrap(),
+            program: glium::Program::from_source(display, vertex_shader, fragment_shader, None).unwrap(),
         });
     }
 
-    pub fn update_path(&mut self, scene: &scene::Scene) {
+    pub fn update_path(&mut self, display: &glium::Display, scene: &scene::Scene) {
         let vertex_shader_src = self.shaders.get(&String::from("vertex.vert")).unwrap();
         let fragment_shader = self.shaders.get(&String::from("path.frag")).unwrap();
 
         self.path_obj = Some(Object {
-            vertex_buffer: glium::VertexBuffer::new(&self.display, &self.shape_from_path(&scene.map(), scene.get_path(), 0.015, 0.1)).unwrap(),
+            vertex_buffer: glium::VertexBuffer::new(display, &self.shape_from_path(&scene.map(), scene.get_path(), 0.015, 0.1)).unwrap(),
             indices: glium::index::PrimitiveType::TriangleStrip,
-            program: glium::Program::from_source(&self.display, vertex_shader_src, fragment_shader, None).unwrap(),
+            program: glium::Program::from_source(display, vertex_shader_src, fragment_shader, None).unwrap(),
         });
     }
 
-    pub fn update_origin(&mut self, scene: &scene::Scene) {
+    pub fn update_origin(&mut self, display: &glium::Display, scene: &scene::Scene) {
         let vertex_shader_src = self.shaders.get(&String::from("vertex.vert")).unwrap();
         let fragment_shader = self.shaders.get(&String::from("origin.frag")).unwrap();
 
         self.path_origin_obj = Some(Object {
-            vertex_buffer: glium::VertexBuffer::new(&self.display, &self.shape_from_point(&scene.map(), &scene.origin, 0.05, 0.2)).unwrap(),
+            vertex_buffer: glium::VertexBuffer::new(display, &self.shape_from_point(&scene.map(), &scene.origin, 0.05, 0.2)).unwrap(),
             indices: glium::index::PrimitiveType::TriangleStrip,
-            program: glium::Program::from_source(&self.display, vertex_shader_src, fragment_shader, None).unwrap(),
+            program: glium::Program::from_source(display, vertex_shader_src, fragment_shader, None).unwrap(),
         });
     }
 
-    pub fn update_target(&mut self, scene: &scene::Scene) {
+    pub fn update_target(&mut self, display: &glium::Display, scene: &scene::Scene) {
         let vertex_shader_src = self.shaders.get(&String::from("vertex.vert")).unwrap();
         let fragment_shader = self.shaders.get(&String::from("target.frag")).unwrap();
 
         self.path_target_obj = Some(Object {
-            vertex_buffer: glium::VertexBuffer::new(&self.display, &self.shape_from_point(&scene.map(), &scene.target, 0.03, 0.3)).unwrap(),
+            vertex_buffer: glium::VertexBuffer::new(display, &self.shape_from_point(&scene.map(), &scene.target, 0.03, 0.3)).unwrap(),
             indices: glium::index::PrimitiveType::TriangleStrip,
-            program: glium::Program::from_source(&self.display, vertex_shader_src, fragment_shader, None).unwrap(),
+            program: glium::Program::from_source(display, vertex_shader_src, fragment_shader, None).unwrap(),
         });
     }
 

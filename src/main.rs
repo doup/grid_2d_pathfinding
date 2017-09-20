@@ -7,6 +7,11 @@ mod scene;
 use glium::{glutin};
 
 fn main() {
+    let mut events_loop = glutin::EventsLoop::new();
+    let window = glutin::WindowBuilder::new().with_title("Grid 2D Pathfinding").with_dimensions(800, 500);
+    let context = glutin::ContextBuilder::new();
+    let display = glium::Display::new(window, context, &events_loop).unwrap();
+
     let mut renderer = renderer::Renderer::new();
     let mut scene = scene::Scene::new();
     let mut mouse_position: (f64, f64) = (0.0, 0.0);
@@ -35,14 +40,11 @@ fn main() {
     scene.set_target(scene::Point::new(0, 0));
     scene.show_map(0);
 
-    renderer.update_all(&scene);
+    renderer.update_all(&display, &scene);
 
     let mut closed = false;
     while !closed {
-        renderer.draw();
-
-        let display = &mut renderer.display;
-        let events_loop = &mut renderer.events_loop;
+        renderer.draw(&display);
 
         events_loop.poll_events(|event| {
             match event {
@@ -60,13 +62,13 @@ fn main() {
                                 match button {
                                     glutin::MouseButton::Right => {
                                         scene.set_origin(scene::Point::new(map_x, map_y));
-                                        //renderer.update_origin(&scene);
-                                        //renderer.update_path(&scene);
+                                        renderer.update_origin(&display, &scene);
+                                        renderer.update_path(&display, &scene);
                                     },
                                     glutin::MouseButton::Left => {
                                         scene.set_target(scene::Point::new(map_x, map_y));
-                                        //renderer.update_target(&scene);
-                                        //renderer.update_path(&scene);
+                                        renderer.update_target(&display, &scene);
+                                        renderer.update_path(&display, &scene);
                                     },
                                     _ => (),
                                 }
