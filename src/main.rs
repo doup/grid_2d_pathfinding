@@ -74,12 +74,12 @@ fn main() {
                                             glutin::MouseButton::Right => {
                                                 scene.set_origin(map_x, map_y);
                                                 renderer.update_origin(&display, &scene);
-                                                //renderer.update_path(&display, &scene);
+                                                renderer.update_path(&display, &scene);
                                             },
                                             glutin::MouseButton::Left => {
                                                 scene.set_target(map_x, map_y);
                                                 renderer.update_target(&display, &scene);
-                                                //renderer.update_path(&display, &scene);
+                                                renderer.update_path(&display, &scene);
                                             },
                                             _ => (),
                                         }
