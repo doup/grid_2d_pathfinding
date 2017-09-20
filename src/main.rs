@@ -63,25 +63,29 @@ fn main() {
                     glutin::WindowEvent::MouseMoved { position, .. } => mouse_position = position,
                     glutin::WindowEvent::MouseInput { state, button, .. } => match state {
                         glutin::ElementState::Pressed => {
-                            let window_size = display.gl_window().get_inner_size_pixels().unwrap();
-                            let map_x = ((scene.map().width as f64 * mouse_position.0) / window_size.0 as f64) as i8;
-                            let map_y = ((scene.map().height as f64 * mouse_position.1) / window_size.1 as f64) as i8;
-                            let is_walkable = scene.map().get_tile(scene::Point::new(map_x, map_y)) == 0;
+                            match display.gl_window().get_inner_size_pixels() {
+                                Some(window_size) => {
+                                    let map_x = ((scene.map().width as f64 * mouse_position.0) / window_size.0 as f64) as i8;
+                                    let map_y = ((scene.map().height as f64 * mouse_position.1) / window_size.1 as f64) as i8;
+                                    let is_walkable = scene.map().get_tile(scene::Point::new(map_x, map_y)) == 0;
 
-                            if is_walkable {
-                                match button {
-                                    glutin::MouseButton::Right => {
-                                        scene.set_origin(map_x, map_y);
-                                        renderer.update_origin(&display, &scene);
-                                        renderer.update_path(&display, &scene);
-                                    },
-                                    glutin::MouseButton::Left => {
-                                        scene.set_target(map_x, map_y);
-                                        renderer.update_target(&display, &scene);
-                                        renderer.update_path(&display, &scene);
-                                    },
-                                    _ => (),
-                                }
+                                    if is_walkable {
+                                        match button {
+                                            glutin::MouseButton::Right => {
+                                                scene.set_origin(map_x, map_y);
+                                                renderer.update_origin(&display, &scene);
+                                                //renderer.update_path(&display, &scene);
+                                            },
+                                            glutin::MouseButton::Left => {
+                                                scene.set_target(map_x, map_y);
+                                                renderer.update_target(&display, &scene);
+                                                //renderer.update_path(&display, &scene);
+                                            },
+                                            _ => (),
+                                        }
+                                    }
+                                },
+                                None => (),
                             }
                         },
                         _ => (),

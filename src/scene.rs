@@ -17,6 +17,11 @@ impl Point {
     pub fn get_y(&self) -> i8 {
         self.position[1]
     }
+
+    pub fn set_position(&mut self, x: i8, y: i8) {
+        self.position[0] = x;
+        self.position[1] = y;
+    }
 } 
 
 #[derive(Debug)]
@@ -32,7 +37,22 @@ impl Map {
     }
 
     pub fn get_tile(&self, point: Point) -> u8 {
+        let mut point = point.clone();
+
+        self.clamp_point(&mut point);
         self.tiles[(point.get_x() + point.get_y() * self.width) as usize]
+    }
+
+    pub fn clamp_point(&self, point: &mut Point) {
+        let mut x = point.get_x();
+        let mut y = point.get_y();
+
+        x = if x < 0 { 0 } else { x };
+        x = if x >= self.width { self.width - 1 } else { x };
+        y = if y < 0 { 0 } else { y };
+        y = if y >= self.height { self.height - 1 } else { y };
+
+        point.set_position(x, y);
     }
 
     pub fn get_neighbors(&self, point: &Point) -> Vec<Point> {
@@ -131,12 +151,18 @@ impl Scene {
     }
 
     pub fn set_origin(&mut self, x: i8, y: i8) {
-        self.origin = Point::new(x, y);
+        let mut point = Point::new(x, y);
+
+        self.map().clamp_point(&mut point);
+        self.origin = point;
         self.calc_came_from();
     }
 
     pub fn set_target(&mut self, x: i8, y: i8) {
-        self.target = Point::new(x, y);
+        let mut point = Point::new(x, y);
+
+        self.map().clamp_point(&mut point);
+        self.target = point;
     }
 
     pub fn show_map(&mut self, id: usize) {
