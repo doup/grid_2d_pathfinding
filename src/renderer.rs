@@ -14,13 +14,35 @@ struct Object {
     program:       glium::Program,
 }
 
+#[derive(Debug)]
+pub struct Rectangle {
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+}
+
+impl Rectangle {
+    pub fn right(&self) -> f32 {
+        self.x + self.width
+    }
+
+    pub fn bottom(&self) -> f32 {
+        self.y + self.height
+    }
+}
+
 pub struct Renderer {
+    viewport:        Rectangle,
+    viewport_margin: u8,
+    top_bar_height:  u8,
     walkable_obj:    Option<Object>,
     walls_obj:       Option<Object>,
     path_obj:        Option<Object>,
     path_origin_obj: Option<Object>,
     path_target_obj: Option<Object>,
     shaders:         HashMap<String, String>,
+    map_bbox:        Rectangle,
 }
 
 impl Renderer {
@@ -37,12 +59,16 @@ impl Renderer {
         implement_vertex!(Vertex, position);
 
         Renderer {
+            viewport:        Rectangle { x: 0.0, y: 0.0, width: 1.0, height: 1.0 },
+            viewport_margin: 30,
+            top_bar_height:  30,
             walkable_obj:    None,
             walls_obj:       None,
             path_obj:        None,
             path_origin_obj: None,
             path_target_obj: None,
             shaders:         shaders,
+            map_bbox:        Rectangle { x: -0.5, y: 0.5, width: 1.0, height: 1.0 },
         }
     }
 
@@ -73,6 +99,18 @@ impl Renderer {
             },
             None => (),
         }
+    }
+
+    pub fn get_map_bbox(&self) -> &Rectangle {
+        &self.map_bbox
+    }
+
+    pub fn get_viewport(&self) -> &Rectangle {
+        &self.viewport
+    }
+
+    pub fn set_viewport(&mut self, viewport: Rectangle) {
+        self.viewport = viewport;
     }
 
     pub fn update_all(&mut self, display: &glium::Display, scene: &scene::Scene) {
@@ -140,13 +178,13 @@ impl Renderer {
 
     fn shape_from_map(&self, map: &scene::Map, padding: f32, type_filter: u8) -> Vec<Vertex> {
         let mut shape   = vec![];
-        let cell_width  = 2.0 / map.width as f32;
-        let cell_height = 2.0 / map.height as f32;
+        let cell_width  = self.map_bbox.width / map.width as f32;
+        let cell_height = self.map_bbox.height / map.height as f32;
 
         for y in 0..map.height {
             for x in 0..map.width {
-                let left   = -1.0 + x as f32 * cell_width + padding;
-                let top    =  1.0 - y as f32 * cell_height - padding;
+                let left   = self.map_bbox.x + x as f32 * cell_width + padding;
+                let top    = self.map_bbox.y - y as f32 * cell_height - padding;
                 let bottom = top - cell_height + (2.0 * padding);
                 let right  = left + cell_width - (2.0 * padding);
 
@@ -166,12 +204,12 @@ impl Renderer {
 
     fn shape_from_path(&self, map: &scene::Map, path: Vec<scene::Point>, width: f32, z: f32) -> Vec<Vertex> {
         let mut shape   = vec![];
-        let cell_width  = 2.0 / map.width as f32;
-        let cell_height = 2.0 / map.height as f32;
+        let cell_width  = self.map_bbox.width / map.width as f32;
+        let cell_height = self.map_bbox.height / map.height as f32;
 
         for point in path {
-            let x = -1.0 + point.get_x() as f32 * cell_width + cell_width / 2.0; 
-            let y =  1.0 - point.get_y() as f32 * cell_height - cell_height / 2.0;
+            let x = self.map_bbox.x + point.get_x() as f32 * cell_width + cell_width / 2.0; 
+            let y = self.map_bbox.y - point.get_y() as f32 * cell_height - cell_height / 2.0;
             
             let left   = x - width;
             let top    = y + width;
@@ -190,10 +228,10 @@ impl Renderer {
     }
 
     fn shape_from_point(&self, map: &scene::Map, point: &scene::Point, width: f32, z: f32) -> Vec<Vertex> {
-        let cell_height = 2.0 / map.height as f32;
-        let cell_width = 2.0 / map.width as f32;
-        let x = -1.0 + (point.get_x() as f32 * cell_width) + cell_width / 2.0;
-        let y =  1.0 - (point.get_y() as f32 * cell_height) - cell_height / 2.0;
+        let cell_height = self.map_bbox.width / map.height as f32;
+        let cell_width = self.map_bbox.height / map.width as f32;
+        let x = self.map_bbox.x + (point.get_x() as f32 * cell_width) + cell_width / 2.0;
+        let y = self.map_bbox.y - (point.get_y() as f32 * cell_height) - cell_height / 2.0;
 
         let shape = vec![
             Vertex { position: [x - width, y + width, z] },
